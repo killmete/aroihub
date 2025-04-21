@@ -183,7 +183,6 @@ const RestaurantDetail: React.FC = () => {
       const restaurantId = parseInt(id);
       if (isNaN(restaurantId)) {
         logger.error('Invalid restaurant ID');
-        throw new Error('Invalid restaurant ID');
       }
       
       const data = await restaurantService.getPublicRestaurantById(restaurantId);

@@ -12,12 +12,52 @@ interface GoogleMapProps {
   zoom?: number;
 }
 
+// Define Google Maps types to avoid using 'any'
 declare global {
   interface Window {
-    google: typeof google;
+    google: {
+      maps: {
+        Map: new (element: HTMLElement, options: GoogleMapOptions) => GoogleMap;
+        Marker: new (options: GoogleMarkerOptions) => GoogleMarker;
+        Animation: {
+          DROP: number;
+        };
+      };
+    };
     initMap: () => void;
     googleMapsInitialized: boolean;
   }
+}
+
+// Google Maps type definitions
+interface GoogleMapOptions {
+  center: { lat: number; lng: number };
+  zoom: number;
+  mapTypeControl: boolean;
+  streetViewControl: boolean;
+  fullscreenControl: boolean;
+  zoomControl: boolean;
+  styles?: Array<{
+    featureType: string;
+    elementType: string;
+    stylers: Array<{ [key: string]: string }>;
+  }>;
+}
+
+interface GoogleMap {
+  setCenter: (position: { lat: number; lng: number }) => void;
+  setZoom: (zoom: number) => void;
+}
+
+interface GoogleMarkerOptions {
+  position: { lat: number; lng: number };
+  map: GoogleMap;
+  title?: string;
+  animation?: number;
+}
+
+interface GoogleMarker {
+  setMap: (map: GoogleMap | null) => void;
 }
 
 const GoogleMap: React.FC<GoogleMapProps> = ({
@@ -32,7 +72,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const scriptRef = useRef<HTMLScriptElement | null>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const mapInstanceRef = useRef<GoogleMap | null>(null);
 
   useEffect(() => {
     if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) {
