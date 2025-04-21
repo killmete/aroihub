@@ -10,7 +10,8 @@ import bannerRoutes from './routes/bannerRoutes';
 import logRoutes from './routes/logRoutes';
 import { connectToMongo } from './db/mongo';
 import logger from './utils/logger';
-
+import { corsOptions } from './config/cors';
+import helmet from 'helmet';
 // Load environment variables
 dotenv.config();
 
@@ -19,7 +20,8 @@ const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Middleware
-app.use(cors());
+app.use(helmet());
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 
 // Request logger
@@ -41,7 +43,7 @@ app.use('/api/logs', logRoutes);
 connectToMongo();
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
