@@ -8,6 +8,7 @@ import { ArrowLeft, MapPin, Phone, Globe, Star, X, ChevronLeft, ChevronRight, Cl
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import GoogleMap from '@/components/GoogleMap';
 import logger from '../../utils/logger';
 
 const RestaurantDetail: React.FC = () => {
@@ -540,29 +541,29 @@ const RestaurantDetail: React.FC = () => {
           {/* Left column - Restaurant Details - full width on mobile, 70% on desktop */}
           <div className="w-full lg:w-[70%] bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="p-4 sm:p-6">
-              {/* Restaurant Name and Rating section with enhanced design */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                <div>
+              {/* Restaurant Name and Rating section with right-aligned status pill */}
+              <div className="mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1">{restaurant?.name}</h1>
                   
-                  <div className="flex items-center mb-2">
-                    <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-2 py-0.5 rounded flex items-center mr-2">
-                      <span className="font-bold">{restaurant.average_rating ? Number(restaurant.average_rating).toFixed(1) : '0.0'}</span>
-                      <Star className="pl-1" size={16} fill="white" />
+                  {/* Open/closed status pill - positioned on the right */}
+                  {restaurant.opening_hour && restaurant.closing_hour && (
+                    <div className="flex items-center mt-2 sm:mt-0">
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        <div className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                        <span className="font-medium text-sm whitespace-nowrap">{isOpen ? 'เปิดอยู่' : 'ปิดอยู่'}</span>
+                      </div>
                     </div>
-                    <span className="text-gray-700">{restaurant.review_count || 0} <span className="text-gray-500 font-light">รีวิว</span></span>
-                  </div>
+                  )}
                 </div>
                 
-                {/* Open/closed status badge - more prominent */}
-                {restaurant.opening_hour && restaurant.closing_hour && (
-                  <div className="flex items-center self-start sm:self-center">
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      <div className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                      <span className="font-medium text-sm">{isOpen ? 'เปิดอยู่' : 'ปิดอยู่'}</span>
-                    </div>
+                <div className="flex items-center mt-2">
+                  <div className="bg-gradient-to-r from-red-600 to-red-700 text-white px-2 py-0.5 rounded flex items-center mr-2">
+                    <span className="font-bold">{restaurant.average_rating ? Number(restaurant.average_rating).toFixed(1) : '0.0'}</span>
+                    <Star className="pl-1" size={16} fill="white" />
                   </div>
-                )}
+                  <span className="text-gray-700">{restaurant.review_count || 0} <span className="text-gray-500 font-light">รีวิว</span></span>
+                </div>
               </div>
 
               {/* Cuisine Types and Price Range - Improved mobile display */}
@@ -642,7 +643,7 @@ const RestaurantDetail: React.FC = () => {
               <div className="flex flex-wrap gap-2 mt-6 border-t pt-4 font-normal">
                 <Link
                   to={isAuthenticated ? `/restaurants/${id}/reviews` : "#"}
-                  className={`flex-1 sm:flex-none flex items-center justify-center rounded-md px-4 py-2.5 gap-x-2 transition-all ${
+                  className={`flex-1 sm:flex-none flex items-center justify-center rounded-md px-3 py-2 gap-x-2 transition-all ${
                     isAuthenticated
                       ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm hover:shadow'
                       : 'bg-blue-400 text-white opacity-50 cursor-not-allowed pointer-events-none'
@@ -654,12 +655,12 @@ const RestaurantDetail: React.FC = () => {
                     }
                   }}
                 >
-                  <Star strokeWidth={2.5} size={20} />
-                  <span className="font-medium">เขียนรีวิว</span>
+                  <Star strokeWidth={2.5} size={18} />
+                  <span className="font-medium text-sm sm:text-base">เขียนรีวิว</span>
                 </Link>
                 
                 <button 
-                  className="flex-1 sm:flex-none flex items-center justify-center rounded-md border border-gray-300 px-4 py-2.5 gap-x-2 hover:bg-gray-50 transition-all"
+                  className="flex-1 sm:flex-none flex items-center justify-center rounded-md border border-gray-300 px-3 py-2 gap-x-2 hover:bg-gray-50 transition-all"
                   onClick={() => {
                     const shareText = `ดูร้าน ${restaurant.name} บน AroiHub`;
                     if (navigator.share) {
@@ -676,18 +677,18 @@ const RestaurantDetail: React.FC = () => {
                     }
                   }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-share2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-share2">
                     <circle cx="18" cy="5" r="3"/>
                     <circle cx="6" cy="12" r="3"/>
                     <circle cx="18" cy="19" r="3"/>
                     <line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/>
                     <line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>
                   </svg>
-                  <span className="font-medium">แชร์</span>
+                  <span className="font-medium text-sm sm:text-base">แชร์</span>
                 </button>
                 
                 <button 
-                  className="flex-1 sm:flex-none flex items-center justify-center rounded-md border border-gray-300 px-4 py-2.5 gap-x-2 hover:bg-gray-50 transition-all"
+                  className="flex-1 sm:flex-none flex items-center justify-center rounded-md border border-gray-300 px-3 py-2 gap-x-2 hover:bg-gray-50 transition-all"
                   onClick={() => {
                     if (restaurant?.phone_number) {
                       window.location.href = `tel:${restaurant.phone_number}`;
@@ -696,8 +697,8 @@ const RestaurantDetail: React.FC = () => {
                     }
                   }}
                 >
-                  <Phone size={20} />
-                  <span className="font-medium">โทร</span>
+                  <Phone size={18} />
+                  <span className="font-medium text-sm sm:text-base">โทร</span>
                 </button>
               </div>
             </div>
@@ -838,18 +839,31 @@ const RestaurantDetail: React.FC = () => {
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Left side - Map placeholder */}
                 <div className="w-full md:w-[30%]">
-                  <div className="bg-gray-200 rounded-lg w-full h-36 sm:h-48 flex items-center justify-center mb-4 md:mb-0">
-                    <MapPin className="h-8 w-8 text-gray-400" />
-                    <span className="text-gray-500 ml-2">แผนที่จะแสดงที่นี่</span>
-                  </div>
+                  {restaurant && restaurant.latitude && restaurant.longitude ? (
+                    <GoogleMap 
+                      latitude={restaurant.latitude} 
+                      longitude={restaurant.longitude}
+                      restaurantName={restaurant.name}
+                      height="192px"
+                      zoom={16}
+                    />
+                  ) : (
+                    <div className="bg-gray-200 rounded-lg w-full h-36 sm:h-48 flex items-center justify-center mb-4 md:mb-0">
+                      <MapPin className="h-8 w-8 text-gray-400" />
+                      <span className="text-gray-500 ml-2">แผนที่จะแสดงที่นี่</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Right side - Contact info */}
                 <div className="w-full md:w-[70%] flex flex-col justify-start">
                   {restaurant?.address && (
-                    <div className="mb-2 flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                    <div className="mb-2 mr-1 flex flex-col sm:flex-row sm:justify-between sm:items-center">
                       <div className="flex items-center text-gray-700 mb-2 sm:mb-0">
-                        <MapPin className="h-6 w-7 text-gray-500 mr-2 flex-shrink-0" />
+                        {/* Make all icons consistent size */}
+                        <div className="w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0">
+                          <MapPin className="text-gray-500" />
+                        </div>
                         <span className="break-words">{restaurant.address}</span>
                       </div>
                       <button className="text-blue-600 bg-blue-200 px-3 py-2 rounded-xl font-medium hover:bg-blue-300 flex items-center gap-1 whitespace-nowrap transition self-start sm:self-center">
@@ -861,7 +875,10 @@ const RestaurantDetail: React.FC = () => {
                   {restaurant?.phone_number && (
                     <div className="mb-3 pt-2 border-t">
                       <div className="flex items-center text-gray-700">
-                        <Phone className="h-5 w-5 text-gray-500 mr-2" />
+                        {/* Make all icons consistent size */}
+                        <div className="w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0">
+                          <Phone className="text-gray-500" />
+                        </div>
                         <span>{restaurant.phone_number}</span>
                       </div>
                     </div>
@@ -869,7 +886,10 @@ const RestaurantDetail: React.FC = () => {
 
                   {restaurant?.website_url && (
                     <div className="flex items-center">
-                      <Globe className="h-5 w-5 text-gray-500 mr-2 flex-shrink-0" />
+                      {/* Make all icons consistent size */}
+                      <div className="w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0">
+                        <Globe className="text-gray-500" />
+                      </div>
                       <a
                         href={restaurant.website_url}
                         target="_blank"

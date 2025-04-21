@@ -22,6 +22,7 @@ import {
 } from "../controllers/reviewController";
 
 import { generalRateLimiter } from '../middleware/rateLimit';
+import { getMapConfig } from '../controllers/mapController';
 
 const router = express.Router();
 
@@ -38,10 +39,10 @@ const upload = multer({
 
 
 
-// TEMPORARY: This route lives here for now due to ordering issues in bannerRoutes.
+// TEMPORARY: This route lives here for now due to ordering issues in bannerRoutes and mapRoutes.
 // Consider relocating to bannerRoutes once conflict is resolved.
 router.get('/banners/active', getActiveBanners);
-
+router.get('/maps/config', generalRateLimiter, getMapConfig);
 
 
 // GET popular restaurants (renamed to top-rated for frontend compatibility)

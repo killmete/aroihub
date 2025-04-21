@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, PenSquare, Trash2, ImagePlus, X } from 'lucide-react';
+import { Plus, PenSquare, Trash2, ImagePlus, X, Search } from 'lucide-react';
 import { restaurantService } from '@/services/restaurantService';
 import { Restaurant } from '@/types/restaurant';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
 import RectangleCropper from '@/components/RectangleCropper';
 import DraggableImageGallery from '@/components/DraggableImageGallery';
 import { cuisineTranslations, translateCuisine, translateThaiToEnglish } from '@/utils/translations';
+import { geocodingService } from '@/services/geocodingService';
 import logger from '../../utils/logger';
 
 // Price ranges - same as in SearchPage for consistency
@@ -54,6 +55,8 @@ const AdminRestaurants: React.FC = () => {
     max_price: 0,
     min_capacity: 0,
     max_capacity: 0,
+    latitude: 0,
+    longitude: 0,
   });
   const [selectedPriceRange, setSelectedPriceRange] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -173,6 +176,8 @@ const AdminRestaurants: React.FC = () => {
       max_price: 0,
       min_capacity: 0,
       max_capacity: 0,
+      latitude: 0,
+      longitude: 0,
     });
     setCuisineInput('');
     setIsDialogOpen(true);
@@ -193,6 +198,8 @@ const AdminRestaurants: React.FC = () => {
       max_price: restaurant.max_price || 0,
       min_capacity: restaurant.min_capacity || 0,
       max_capacity: restaurant.max_capacity || 0,
+      latitude: restaurant.latitude || 0,
+      longitude: restaurant.longitude || 0,
     });
     setCuisineInput('');
     setIsDialogOpen(true);
@@ -324,6 +331,25 @@ const AdminRestaurants: React.FC = () => {
       ...prev,
       images: newImages
     }));
+  };
+
+  const handleGeocodeAddress = async () => {
+    if (!formData.address) {
+      toast.error('Please enter an address to geocode');
+      return;
+    }
+
+    try {
+      const { latitude, longitude } = await geocodingService.geocodeAddress(formData.address);
+      setFormData(prev => ({
+        ...prev,
+        latitude,
+        longitude
+      }));
+      toast.success('Address geocoded successfully');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to geocode address');
+    }
   };
 
   const handleSaveRestaurant = async () => {
@@ -674,14 +700,54 @@ const AdminRestaurants: React.FC = () => {
                     <Label htmlFor="address" className="text-sm font-medium">
                       Address
                     </Label>
-                    <Input
-                      id="address"
-                      name="address"
-                      value={formData.address || ''}
-                      onChange={handleInputChange}
-                      className="mt-1.5"
-                      placeholder="Enter full address"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="address"
+                        name="address"
+                        value={formData.address || ''}
+                        onChange={handleInputChange}
+                        className="mt-1.5 pr-10"
+                        placeholder="Enter full address"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleGeocodeAddress}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        <Search className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="latitude" className="text-sm font-medium">
+                        Latitude
+                      </Label>
+                      <Input
+                        id="latitude"
+                        name="latitude"
+                        value={formData.latitude || ''}
+                        onChange={handleInputChange}
+                        className="mt-1.5"
+                        placeholder="Latitude"
+                        readOnly
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="longitude" className="text-sm font-medium">
+                        Longitude
+                      </Label>
+                      <Input
+                        id="longitude"
+                        name="longitude"
+                        value={formData.longitude || ''}
+                        onChange={handleInputChange}
+                        className="mt-1.5"
+                        placeholder="Longitude"
+                        readOnly
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -876,7 +942,7 @@ const AdminRestaurants: React.FC = () => {
                             }}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
-                              <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1-.708.708l6-6z"/>
+                              <path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1-.708.708l6-6a.5.5 0 0 1 0-.708z"/>
                             </svg>
                           </button>
                         </div>

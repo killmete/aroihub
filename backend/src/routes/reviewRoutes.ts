@@ -67,11 +67,9 @@ import express, {
   // =================== Public Routes ===================
 
   // Get reviews for a specific restaurant
-  router.get('/restaurants/:restaurantId/reviews', 
-    validateObjectId('restaurantId'), getRestaurantReviews);
-  router.get('/restaurants/:restaurantId/rating', 
-    validateObjectId('restaurantId'), getRestaurantRatingStats);
-  
+  router.get('/restaurants/:restaurantId/reviews', getRestaurantReviews);
+  router.get('/restaurants/:restaurantId/rating', getRestaurantRatingStats);
+
 
   // Get rating stats for a restaurant
   router.get(

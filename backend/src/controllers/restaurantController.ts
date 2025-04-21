@@ -304,29 +304,48 @@ export const deleteRestaurant = async (req: Request, res: Response): Promise<voi
 
 export const uploadRestaurantImage = async (req: Request, res: Response): Promise<void> => {
     try {
-        if (!req.body.image) {
-            logger.warn('No image data provided for restaurant image upload');
-            res.status(400).json({ error: 'No image data provided' });
+        // Handle file uploads from multer middleware
+        if (req.file) {
+            logger.debug('Processing image file upload for restaurant');
+
+            // Convert buffer to base64
+            const base64 = Buffer.from(req.file.buffer).toString('base64');
+            const dataURI = `data:${req.file.mimetype};base64,${base64}`;
+
+            const result = await cloudinary.uploader.upload(dataURI, {
+                resource_type: 'image',
+                folder: 'aroihub/restaurants'
+            });
+
+            logger.info('Restaurant image uploaded successfully to Cloudinary');
+            res.status(200).json({ url: result.secure_url, imageUrl: result.secure_url });
             return;
         }
-
-        const base64Data = req.body.image;
-        const isBase64 = /^data:image\/(png|jpeg|jpg|webp);base64,/.test(base64Data);
-        if (!isBase64) {
-            logger.warn('Invalid image format provided');
-            res.status(400).json({ error: 'Invalid image format. Must be PNG, JPEG, JPG, or WEBP.' });
-            return;
-        }
-
-        logger.debug('Uploading restaurant image to Cloudinary');
         
-        const result = await cloudinary.uploader.upload(base64Data, {
-            resource_type: 'image',
-            folder: 'aroihub/restaurants'
-        });
+        // Handle direct base64 uploads (fallback for backward compatibility)
+        if (req.body && req.body.image) {
+            const base64Data = req.body.image;
+            const isBase64 = /^data:image\/(png|jpeg|jpg|webp);base64,/.test(base64Data);
+            if (!isBase64) {
+                logger.warn('Invalid image format provided');
+                res.status(400).json({ error: 'Invalid image format. Must be PNG, JPEG, JPG, or WEBP.' });
+                return;
+            }
 
-        logger.info('Restaurant image uploaded successfully to Cloudinary');
-        res.status(200).json({ imageUrl: result.secure_url });
+            logger.debug('Uploading restaurant image to Cloudinary');
+            
+            const result = await cloudinary.uploader.upload(base64Data, {
+                resource_type: 'image',
+                folder: 'aroihub/restaurants'
+            });
+
+            logger.info('Restaurant image uploaded successfully to Cloudinary');
+            res.status(200).json({ url: result.secure_url, imageUrl: result.secure_url });
+            return;
+        }
+        
+        logger.warn('No image data provided for restaurant image upload');
+        res.status(400).json({ error: 'No image data provided' });
     } catch (err) {
         logger.error('uploadRestaurantImage error:', err);
         res.status(500).json({ error: 'Image upload failed' });

@@ -38,12 +38,15 @@ AroiHub is a modern restaurant review platform designed to help users discover, 
 - **Social Interaction**: Like and interact with other users' reviews
 - **User Profiles**: Customize your profile and view your review history
 - **Responsive Design**: Fully optimized for both desktop and mobile devices
+- **Location Features**: Interactive maps showing restaurant locations for easy navigation
 
 ### For Restaurant Owners and Admins
 - **Restaurant Management**: Add, edit, and manage restaurant listings
 - **Admin Dashboard**: Monitor platform activity and user engagement
 - **Banner Management**: Customize promotional banners for the platform
 - **Image Management**: Upload and organize restaurant images
+- **Geocoding Integration**: Automatically generate coordinates from addresses for precise restaurant location mapping
+- **Location Editing**: Manually refine restaurant coordinates for perfect map placement
 
 ## Tech Stack
 
@@ -55,6 +58,8 @@ AroiHub is a modern restaurant review platform designed to help users discover, 
 - **Form Handling**: React Hook Form
 - **Image Upload & Manipulation**: Drag-and-drop with cropping capabilities
 - **HTTP Client**: Fetch API
+- **Map Integration**: Google Maps API integration for location display
+- **Geocoding**: Address-to-coordinates conversion using Google Maps Geocoding API
 
 ### Backend
 - **Runtime**: Node.js
@@ -66,6 +71,7 @@ AroiHub is a modern restaurant review platform designed to help users discover, 
 - **File Storage**: Cloudinary (images)
 - **Validation**: Express Validator
 - **Logging**: Custom logger implementation
+- **Location Services**: Google Maps API integration for geocoding and location data
 
 ## Architecture
 
@@ -76,7 +82,9 @@ AroiHub follows a modern web application architecture:
 3. **Databases**: 
    - PostgreSQL for structured data (users, restaurants)
    - MongoDB for unstructured data (reviews, banners)
-4. **External Services**: Cloudinary for image storage
+4. **External Services**: 
+   - Cloudinary for image storage
+   - Google Maps for geocoding and location services
 5. **Authentication**: JWT-based authentication flow
 
 ### Data Flow
@@ -94,6 +102,7 @@ AroiHub follows a modern web application architecture:
 - npm or yarn
 - PostgreSQL
 - MongoDB
+- Google Maps API key (for geocoding and map features)
 
 ### Installation
 
@@ -125,15 +134,18 @@ PG_DATABASE=aroihub
 
 # MongoDB
 MONGODB_URI=mongodb://localhost:27017/aroihub
+ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:3000
 
 # JWT Authentication
 JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRATION=24h
 
 # Cloudinary
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+
+# Google Maps
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ```
 
 4. Initialize the databases:
@@ -157,10 +169,19 @@ aroihub/
 │   ├── src/
 │   │   ├── assets/          # Static assets (images, SVGs)
 │   │   ├── components/      # Reusable UI components
+│   │   │   ├── ui/          # Core UI components
+│   │   │   ├── GoogleMap.tsx # Google Maps integration component
+│   │   │   └── ...
 │   │   ├── context/         # React context providers
 │   │   ├── layouts/         # Layout components
 │   │   ├── pages/           # Page components
+│   │   │   ├── restaurants/ # Restaurant-related pages
+│   │   │   ├── admin/       # Admin panel pages
+│   │   │   └── ...
 │   │   ├── services/        # API service modules
+│   │   │   ├── geocodingService.ts # Geocoding service for address-to-coordinates
+│   │   │   ├── mapService.ts       # Map-related services
+│   │   │   └── ...
 │   │   ├── types/           # TypeScript type definitions
 │   │   └── utils/           # Utility functions (including logger)
 │   └── ...
@@ -168,6 +189,8 @@ aroihub/
 ├── backend/                  # Express backend application
 │   ├── src/
 │   │   ├── controllers/     # Request controllers
+│   │   │   ├── mapController.ts   # Map and location controllers
+│   │   │   └── ...
 │   │   ├── db/              # Database connections
 │   │   ├── middleware/      # Express middleware
 │   │   ├── models/          # Data models
@@ -235,6 +258,12 @@ aroihub/
 | PUT | /api/admin/banners/:id/toggle | Toggle banner status | Yes (admin) |
 | POST | /api/admin/banners/upload | Upload banner image | Yes (admin) |
 
+### Map Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|--------------|
+| GET | /api/maps/config | Get map configuration including API keys | No |
+
 ## Frontend Components
 
 ### Core Components
@@ -246,14 +275,21 @@ aroihub/
 - **ScrollToTop**: Utility component for scrolling to top on route change
 - **DraggableImageGallery**: Component for arranging images
 - **ImageCropper**: Component for cropping uploaded images
+- **GoogleMap**: Map component for displaying restaurant locations
+- **RectangleCropper**: Component for cropping images to specific aspect ratios
 
 ### Page Components
 - **Home**: Landing page with featured restaurants and banners
 - **LoginPage/RegisterPage**: Authentication pages
-- **RestaurantDetails**: Restaurant information page
+- **RestaurantDetails**: Restaurant information page with map integration
 - **AddReview**: Review submission form
 - **ProfilePage**: User profile management
-- **Admin pages**: Various administrative interfaces
+- **SearchPage**: Advanced restaurant search with filtering capabilities
+- **Admin pages**: 
+  - **AdminRestaurants**: Restaurant management with geocoding features
+  - **AdminBanners**: Banner management interface
+  - **AdminUsers**: User management dashboard
+  - **AdminDashboard**: Overview of platform metrics
 
 ## Database Models
 
@@ -277,13 +313,20 @@ aroihub/
 ```
 - id (PK)
 - name
-- description
 - address
+- phone_number
+- latitude
+- longitude
 - cuisine_type
-- price_range
-- operating_hours
-- cover_image
+- website_url
+- menu
 - images
+- opening_hour
+- closing_hour
+- min_price
+- max_price
+- min_capacity
+- max_capacity
 - average_rating
 - review_count
 - created_at
@@ -378,6 +421,7 @@ aroihub/
 - **Input Validation**: Express Validator used for request validation
 - **CORS**: Configured to allow only specified origins
 - **Helmet**: Used to set security HTTP headers
+- **API Keys**: Google Maps and third-party API keys are securely handled server-side
 
 ## Testing
 
@@ -395,6 +439,7 @@ Currently, testing infrastructure is planned but not fully implemented. Future i
 - All images and restaurant data included in this project are for demonstration purposes only
 - Icons provided by Lucide Icons
 - UI components adapted from shadcn/ui
+- Map functionality powered by Google Maps API
 
 ---
 
