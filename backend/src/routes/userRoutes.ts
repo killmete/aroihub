@@ -5,6 +5,10 @@ import { validateProfileUpdate, validatePasswordChange } from '../middleware/use
 import multer from 'multer';
 import { NextFunction, Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import {
+    profileImageUploadLimiter,
+    passwordChangeLimiter,
+  } from '../middleware/rateLimit';
 
 const router = Router();
 
@@ -31,10 +35,23 @@ const handleValidationErrors = (req: Request, res: Response, next: NextFunction)
 router.put('/profile', authenticate, validateProfileUpdate, handleValidationErrors, updateProfile);
 
 // Upload profile image route
-router.post('/profile/image', authenticate, upload.single('image'), uploadProfileImage);
+router.post(
+  '/profile/image',
+  authenticate,
+  profileImageUploadLimiter,
+  upload.single('image'),
+  uploadProfileImage
+);
 
 // Change password route
-router.put('/password', authenticate, validatePasswordChange, handleValidationErrors, changePassword);
+router.put(
+    '/password',
+    authenticate,
+    passwordChangeLimiter,
+    validatePasswordChange,
+    handleValidationErrors,
+    changePassword
+  );
 
 // Check for updates route
 router.get('/updates', authenticate, checkUserUpdates);

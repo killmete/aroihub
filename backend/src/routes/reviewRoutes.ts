@@ -24,6 +24,11 @@ import express, {
     toggleReviewLike,
   } from '../controllers/reviewController';
 
+  import {
+    reviewSubmissionLimiter,
+    reviewLikeLimiter
+  } from '../middleware/rateLimit';
+  
   interface AuthenticatedRequest extends Request {
     userId?: number;
     file?: Express.Multer.File;
@@ -62,10 +67,11 @@ import express, {
   // =================== Public Routes ===================
 
   // Get reviews for a specific restaurant
-  router.get(
-    '/restaurants/:restaurantId/reviews',
-    getRestaurantReviews
-  );
+  router.get('/restaurants/:restaurantId/reviews', 
+    validateObjectId('restaurantId'), getRestaurantReviews);
+  router.get('/restaurants/:restaurantId/rating', 
+    validateObjectId('restaurantId'), getRestaurantRatingStats);
+  
 
   // Get rating stats for a restaurant
   router.get(
@@ -86,6 +92,7 @@ import express, {
   // Create a new review
   router.post(
     '/reviews',
+    reviewSubmissionLimiter,
     [
       body('restaurant_id')
         .notEmpty()
@@ -109,10 +116,12 @@ import express, {
       createNewReview(req as Request, res);
     }
   );
+  
 
   // Toggle like on a review - moved to authenticated users section
   router.post(
     '/reviews/:id/like',
+    reviewLikeLimiter,
     validateObjectId('id'),
     toggleReviewLike
   );
@@ -125,7 +134,7 @@ import express, {
   router.get('/reviews', getReviews);
 
   // Update all restaurant statistics
-  router.post('/restaurants/update-all-stats', authenticate, isAdmin, updateAllRestaurantStats);
+  router.post('/restaurants/update-all-stats', updateAllRestaurantStats);
 
   // Get review by ID
   router.get('/reviews/:id', validateObjectId('id'), getReviewDetails);

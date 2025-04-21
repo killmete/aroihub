@@ -1,4 +1,4 @@
-import express, { Request } from 'express';
+import express from 'express';
 import { authenticate } from '../middleware/authMiddleware';
 import { isAdmin } from '../middleware/adminMiddleware';
 import { body } from 'express-validator';
@@ -21,11 +21,7 @@ import {
     updateAllRestaurantStats
 } from "../controllers/reviewController";
 
-// Define custom request interface with userId property
-interface AuthenticatedRequest extends Request {
-    userId?: number;
-    file?: Express.Multer.File;
-}
+import { generalRateLimiter } from '../middleware/rateLimit';
 
 const router = express.Router();
 
@@ -42,22 +38,23 @@ const upload = multer({
 
 
 
-// TO-DO: fix this later, band-aid solution but, it works right?
+// TEMPORARY: This route lives here for now due to ordering issues in bannerRoutes.
+// Consider relocating to bannerRoutes once conflict is resolved.
 router.get('/banners/active', getActiveBanners);
 
 
 
 // GET popular restaurants (renamed to top-rated for frontend compatibility)
-router.get('/restaurants/top-rated', getPopularRestaurantsHandler);
+router.get('/restaurants/top-rated', generalRateLimiter, getPopularRestaurantsHandler);
 
 // GET latest restaurants (renamed to newest for frontend compatibility)
-router.get('/restaurants/newest', getLatestRestaurantsHandler);
+router.get('/restaurants/newest', generalRateLimiter, getLatestRestaurantsHandler);
 
 // GET all restaurants for public access
-router.get('/restaurants', getRestaurants);
+router.get('/restaurants', generalRateLimiter, getRestaurants);
 
 // GET specific restaurant by ID for public access
-router.get('/restaurants/:id', getRestaurantDetails);
+router.get('/restaurants/:id', generalRateLimiter, getRestaurantDetails);
 
 // POST update all restaurant statistics
 router.post('/restaurants/update-all-stats', authenticate, isAdmin, updateAllRestaurantStats);
@@ -115,7 +112,7 @@ router.post('/admin/restaurants', [
         .withMessage('Longitude must be a number'),
     body('cuisine_type')
         .optional({ nullable: true })
-        .isArray().optional()
+        .isArray()
         .withMessage('Cuisine type must be an array'),
     body('website_url')
         .optional({ nullable: true })
@@ -123,7 +120,7 @@ router.post('/admin/restaurants', [
         .withMessage('Website URL must be a valid URL'),
     body('images')
         .optional({ nullable: true })
-        .isArray().optional()
+        .isArray()
         .withMessage('Images must be an array'),
 ],
     createNewRestaurant);
@@ -152,7 +149,7 @@ router.put('/admin/restaurants/:id', [
         .withMessage('Longitude must be a number'),
     body('cuisine_type')
         .optional({ nullable: true })
-        .isArray().optional()
+        .isArray()
         .withMessage('Cuisine type must be an array'),
     body('website_url')
         .optional({ nullable: true })
@@ -160,7 +157,7 @@ router.put('/admin/restaurants/:id', [
         .withMessage('Website URL must be a valid URL'),
     body('images')
         .optional({ nullable: true })
-        .isArray().optional()
+        .isArray()
         .withMessage('Images must be an array'),
 ],
     updateRestaurant);
