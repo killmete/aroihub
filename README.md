@@ -162,5 +162,5 @@ aroihub/
 ---
 
 <div align="center">
-  <p>Made with ❤️ by [AroiHub Team]</p>
+  <p>Made with ❤️ by AroiHub Team</p>
 </div>
