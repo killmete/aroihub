@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { restaurantService } from '@/services/restaurantService';
 import { Restaurant } from '@/types/restaurant';
@@ -7,25 +7,25 @@ import { cuisineTranslations } from '@/utils/translations';
 import { Slider, Checkbox, Radio, Rating } from '@mui/material';
 import logger from '../../utils/logger';
 
-// Updated to match the food categories in Home.tsx
+// Updated to match the food categories in Home.tsx with proper capitalization
 const popularCuisines = [
-  'japanese',
-  'korean',
-  'thai',
-  'chinese',
-  'italian',
-  'seafood',
-  'buffet',
-  'bbqbuffet',
-  'grillbuffet',
-  'shabu',
-  'cafe',
-  'dessert',
-  'dimsum',
-  'esan',
-  'noodles',
-  'pizza',
-  'steak'
+  'Japanese',
+  'Korean',
+  'Thai',
+  'Chinese',
+  'Italian',
+  'Seafood',
+  'Buffet',
+  'BBQBuffet',
+  'GrillBuffet',
+  'Shabu',
+  'Cafe',
+  'Dessert',
+  'Dimsum',
+  'Esan',
+  'Noodles',
+  'Pizza',
+  'Steak'
 ];
 
 // Price ranges
@@ -65,7 +65,9 @@ const SearchPage: React.FC = () => {
   
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [filteredRestaurants, setFilteredRestaurants] = useState<Restaurant[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [filterLoading, setFilterLoading] = useState<boolean>(false);
+  const filterLoadingTimer = useRef<NodeJS.Timeout | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Filter states
@@ -73,7 +75,7 @@ const SearchPage: React.FC = () => {
   const [ratingFilter, setRatingFilter] = useState<number>(ratingParam ? parseFloat(ratingParam) : 0);
   const [priceFilter, setPriceFilter] = useState<string>(priceParam || '');
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>(
-    cuisineParam ? [cuisineParam] : []
+    cuisineParam ? [getProperCaseForCuisine(cuisineParam)] : []
   );
   // Add filter logic state - default to OR
   const [cuisineFilterLogic, setCuisineFilterLogic] = useState<'OR' | 'AND'>('OR');
@@ -91,9 +93,23 @@ const SearchPage: React.FC = () => {
   });
   const visibleCuisines = showAllCuisines ? popularCuisines : popularCuisines.slice(0, 6);
 
+  // Helper function to get proper case for cuisine
+  function getProperCaseForCuisine(cuisine: string): string {
+    return popularCuisines.find(c => c.toLowerCase() === cuisine.toLowerCase()) || cuisine;
+  }
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (filterLoadingTimer.current) {
+        clearTimeout(filterLoadingTimer.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const fetchRestaurants = async () => {
-      setLoading(true);
+      setInitialLoading(true);
       try {
         // If we have name search param, use search API directly
         if (nameParam) {
@@ -104,13 +120,14 @@ const SearchPage: React.FC = () => {
           // Otherwise fetch all restaurants initially
           const data = await restaurantService.getPublicRestaurants();
           setRestaurants(data);
+          setFilteredRestaurants(data);
         }
         setError(null);
       } catch (err) {
         logger.error("Error fetching restaurants:", err);
         setError(err instanceof Error ? err.message : 'Failed to fetch restaurants');
       } finally {
-        setLoading(false);
+        setInitialLoading(false);
       }
     };
 
@@ -119,21 +136,32 @@ const SearchPage: React.FC = () => {
 
   // Apply filters
   useEffect(() => {
-    // Apply filters locally for immediate UI response while API call is in progress
+    // Don't run this effect on initial mount
+    if (initialLoading) return;
+
+    // Apply filters locally for immediate UI response
     applyFiltersLocally();
 
     // Use a debounce for API calls
     const debounceTimer = setTimeout(() => {
-      // Then fetch from API with the filters for accurate results
-      fetchFilteredRestaurants();
-      
-      // Update URL params with current filters after debounce
-      updateURLParams();
-    }, 300); // 300ms debounce
+      // Only make API call if needed (complex filters or search)
+      const needsServerFiltering = 
+        nameFilter.trim() !== '' || 
+        selectedCuisines.length > 0 || 
+        ratingFilter > 0 || 
+        priceFilter !== '';
+
+      if (needsServerFiltering) {
+        // Update URL params with current filters
+        updateURLParams();
+        // Then fetch from API with the filters for accurate results
+        fetchFilteredRestaurants();
+      }
+    }, 500); // Increased debounce time to 500ms
 
     return () => clearTimeout(debounceTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurants, selectedCuisines, ratingFilter, priceFilter, cuisineFilterLogic, nameFilter]);
+  }, [selectedCuisines, ratingFilter, priceFilter, cuisineFilterLogic, nameFilter]);
 
   // Apply filters locally
   const applyFiltersLocally = () => {
@@ -155,14 +183,14 @@ const SearchPage: React.FC = () => {
         }
 
         if (cuisineFilterLogic === 'OR') {
-          // OR logic: Restaurant has ANY of the selected cuisines
+          // OR logic: Restaurant has ANY of the selected cuisines (case-insensitive comparison)
           return restaurant.cuisine_type.some(cuisine => 
-            selectedCuisines.includes(cuisine)
+            selectedCuisines.some(sc => sc.toLowerCase() === cuisine.toLowerCase())
           );
         } else {
-          // AND logic: Restaurant has ALL of the selected cuisines
+          // AND logic: Restaurant has ALL of the selected cuisines (case-insensitive comparison)
           return selectedCuisines.every(selectedCuisine =>
-            restaurant.cuisine_type?.includes(selectedCuisine)
+            restaurant.cuisine_type?.some(c => c.toLowerCase() === selectedCuisine.toLowerCase())
           );
         }
       });
@@ -186,16 +214,22 @@ const SearchPage: React.FC = () => {
       }
     }
 
-    // Update URL with filters
-    updateURLParams();
-
-    // Update filtered restaurants
+    // Update filtered restaurants immediately for responsive UI
     setFilteredRestaurants(filtered);
   };
 
   // Fetch filtered restaurants from API
   const fetchFilteredRestaurants = async () => {
-    setLoading(true);
+    // Clear any existing loading timer
+    if (filterLoadingTimer.current) {
+      clearTimeout(filterLoadingTimer.current);
+    }
+    
+    // Only show loading indicator after a brief delay to prevent flickering
+    filterLoadingTimer.current = setTimeout(() => {
+      setFilterLoading(true);
+    }, 300);
+    
     try {
       // Build search params for API call
       const searchParams: {
@@ -235,9 +269,6 @@ const SearchPage: React.FC = () => {
         }
       }
 
-      // Update URL params
-      updateURLParams();
-
       // Call the API with the current filters
       const data = await restaurantService.searchRestaurants(searchParams);
       
@@ -248,7 +279,12 @@ const SearchPage: React.FC = () => {
       logger.error("Error fetching filtered restaurants:", error);
       setError(error instanceof Error ? error.message : 'Failed to fetch restaurants');
     } finally {
-      setLoading(false);
+      // Clear the loading timer if it's still active
+      if (filterLoadingTimer.current) {
+        clearTimeout(filterLoadingTimer.current);
+        filterLoadingTimer.current = null;
+      }
+      setFilterLoading(false);
     }
   };
 
@@ -291,7 +327,7 @@ const SearchPage: React.FC = () => {
     setSearchParams({}, { replace: true });
     
     // Re-fetch all restaurants
-    setLoading(true);
+    setInitialLoading(true);
     try {
       const data = await restaurantService.getPublicRestaurants();
       setRestaurants(data);
@@ -301,7 +337,7 @@ const SearchPage: React.FC = () => {
       logger.error("Error clearing filters and fetching restaurants:", err);
       setError(err instanceof Error ? err.message : 'Failed to fetch restaurants');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
@@ -632,7 +668,7 @@ const SearchPage: React.FC = () => {
         
         {/* Right column - Restaurant listings - 70% */}
         <div className="w-full lg:w-[80%]">
-          {loading ? (
+          {initialLoading ? (
             <div className="py-20 text-center bg-white rounded-lg shadow-sm">
               <div className="loading loading-spinner loading-lg text-orange-400 mx-auto"></div>
               <p className="mt-3 text-gray-500">กำลังโหลดร้านอาหาร...</p>
@@ -657,7 +693,12 @@ const SearchPage: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 relative">
+              {filterLoading && (
+                <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10 rounded-lg">
+                  <div className="loading loading-spinner loading-md text-orange-400"></div>
+                </div>
+              )}
               {filteredRestaurants.map((restaurant) => (
                 <Link
                   key={restaurant.id}
@@ -712,7 +753,7 @@ const SearchPage: React.FC = () => {
 
                         <div className="flex items-center text-sm text-gray-600 mb-3 gap-3">
                           <div className="flex items-center">
-                            <Star size={14} fill={'#efb100'}className="text-yellow-500 mr-1" />
+                            <Star size={14} fill={'#efb100'} className="text-yellow-500 mr-1" />
                             <span>{restaurant.review_count} รีวิว</span>
                           </div>
                           

@@ -77,8 +77,8 @@ export const restaurantService = {
             
             if (params.cuisines && params.cuisines.length > 0) {
                 // Convert array of cuisines to English and join with commas
-                const englishCuisines = params.cuisines.map(c => translateThaiToEnglish(c));
-                queryParams.append('cuisines', englishCuisines.join(','));
+                // No need to translate again as they're already in their proper case from SearchPage
+                queryParams.append('cuisines', params.cuisines.join(','));
                 
                 // Add cuisine logic if specified and multiple cuisines are selected
                 if (params.cuisineLogic && params.cuisines.length > 1) {

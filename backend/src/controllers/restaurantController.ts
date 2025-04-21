@@ -56,8 +56,111 @@ const handleValidation = (req: Request, res: Response, loggerMessage: string): b
 
 // --- Controller Functions ---
 
+export const searchRestaurants = async (req: Request, res: Response): Promise<void> => {
+    try {
+        logger.info('Searching restaurants with filters');
+        logger.debug('Search query parameters:', req.query);
+
+        const {
+            name,
+            cuisine,
+            cuisines,
+            minPrice,
+            maxPrice,
+            minRating,
+            cuisineLogic
+        } = req.query;
+
+        // Get all restaurants first - we'll filter in memory
+        const allRestaurants = await getAllRestaurants();
+
+        // Apply filters
+        let filteredRestaurants = [...allRestaurants];
+
+        // Filter by name
+        if (name && typeof name === 'string') {
+            const nameLower = name.toLowerCase();
+            filteredRestaurants = filteredRestaurants.filter(
+                restaurant => restaurant.name.toLowerCase().includes(nameLower)
+            );
+        }
+
+        // Filter by single cuisine (case-insensitive)
+        if (cuisine && typeof cuisine === 'string') {
+            const cuisineLower = cuisine.toLowerCase();
+            filteredRestaurants = filteredRestaurants.filter(
+                restaurant => restaurant.cuisine_type?.some(c => c.toLowerCase() === cuisineLower)
+            );
+        }
+
+        // Filter by multiple cuisines (case-insensitive)
+        if (cuisines && typeof cuisines === 'string') {
+            const cuisineArray = cuisines.split(',');
+            const logic = cuisineLogic === 'AND' ? 'AND' : 'OR';
+
+            filteredRestaurants = filteredRestaurants.filter(restaurant => {
+                if (!restaurant.cuisine_type || restaurant.cuisine_type.length === 0) {
+                    return false;
+                }
+
+                if (logic === 'AND') {
+                    // AND logic - restaurant must have ALL selected cuisines
+                    return cuisineArray.every(c => 
+                        restaurant.cuisine_type?.some(rc => rc.toLowerCase() === c.toLowerCase())
+                    );
+                } else {
+                    // OR logic - restaurant must have ANY of the selected cuisines
+                    return cuisineArray.some(c => 
+                        restaurant.cuisine_type?.some(rc => rc.toLowerCase() === c.toLowerCase())
+                    );
+                }
+            });
+        }
+
+        // Filter by price range
+        if (minPrice && typeof minPrice === 'string') {
+            const min = Number(minPrice);
+            if (!isNaN(min)) {
+                filteredRestaurants = filteredRestaurants.filter(
+                    restaurant => restaurant.min_price !== undefined && restaurant.min_price >= min
+                );
+            }
+        }
+
+        if (maxPrice && typeof maxPrice === 'string') {
+            const max = Number(maxPrice);
+            if (!isNaN(max)) {
+                filteredRestaurants = filteredRestaurants.filter(
+                    restaurant => restaurant.max_price !== undefined && restaurant.max_price <= max
+                );
+            }
+        }
+
+        // Filter by minimum rating
+        if (minRating && typeof minRating === 'string') {
+            const rating = Number(minRating);
+            if (!isNaN(rating)) {
+                filteredRestaurants = filteredRestaurants.filter(
+                    restaurant => restaurant.average_rating !== undefined && restaurant.average_rating >= rating
+                );
+            }
+        }
+
+        logger.info(`Found ${filteredRestaurants.length} restaurants matching search criteria`);
+        res.json(filteredRestaurants);
+    } catch (err) {
+        logger.error('searchRestaurants error:', err);
+        res.status(500).json({ message: 'Server error while searching restaurants' });
+    }
+};
+
 export const getRestaurants = async (req: Request, res: Response): Promise<void> => {
     try {
+        // If there are query parameters, use the search function instead
+        if (Object.keys(req.query).length > 0) {
+            return searchRestaurants(req, res);
+        }
+
         logger.info('Fetching all restaurants');
         const restaurants = await getAllRestaurants();
         res.json(restaurants);
