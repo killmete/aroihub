@@ -99,4 +99,15 @@ export const reviewSubmissionLimiter = createCustomLimiter({
     max: 20, // Max 20 likes per window
     message: 'Too many like attempts. Please slow down.',
   });
+export const profileImageUploadLimiter = createCustomLimiter({
+  windowMs: 10 * 60 * 1000, // 10 min
+  max: 10,
+  message: 'Too many profile image uploads. Try again later.'
+});
+
+export const passwordChangeLimiter = createCustomLimiter({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 5,
+  message: 'Too many password change attempts. Try again later.'
+});
   

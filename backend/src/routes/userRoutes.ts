@@ -8,13 +8,13 @@ import { validationResult } from 'express-validator';
 import {
     profileImageUploadLimiter,
     passwordChangeLimiter,
-  } from '../middleware/rateLimit';
+} from '../middleware/rateLimit';
 
 const router = Router();
 
 // Set up multer for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
     storage,
     limits: {
         fileSize: 5 * 1024 * 1024 // 5MB limit
@@ -36,11 +36,11 @@ router.put('/profile', authenticate, validateProfileUpdate, handleValidationErro
 
 // Upload profile image route
 router.post(
-  '/profile/image',
-  authenticate,
-  profileImageUploadLimiter,
-  upload.single('image'),
-  uploadProfileImage
+    '/profile/image',
+    authenticate,
+    profileImageUploadLimiter,
+    upload.single('image'),
+    uploadProfileImage
 );
 
 // Change password route
@@ -51,7 +51,7 @@ router.put(
     validatePasswordChange,
     handleValidationErrors,
     changePassword
-  );
+);
 
 // Check for updates route
 router.get('/updates', authenticate, checkUserUpdates);
