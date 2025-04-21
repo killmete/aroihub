@@ -42,7 +42,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to fetch restaurants:', errorData);
-                throw new Error(errorData.message || 'Failed to fetch restaurants');
             }
 
             const restaurants = await response.json();
@@ -109,7 +108,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to search restaurants:', errorData);
-                throw new Error(errorData.message || 'Failed to search restaurants');
             }
 
             const restaurants = await response.json();
@@ -129,7 +127,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to fetch top rated restaurants:', errorData);
-                throw new Error(errorData.message || 'Failed to fetch top rated restaurants');
             }
 
             const restaurants = await response.json();
@@ -149,7 +146,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to fetch newest restaurants:', errorData);
-                throw new Error(errorData.message || 'Failed to fetch newest restaurants');
             }
 
             const restaurants = await response.json();
@@ -168,15 +164,12 @@ export const restaurantService = {
                 method: 'GET',
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
                 }
             });
         
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to fetch restaurant by ID:', errorData);
-                throw new Error(errorData.message || 'Failed to fetch restaurant');
             }
         
             const restaurant = await response.json();
@@ -194,7 +187,6 @@ export const restaurantService = {
 
             if (!token) {
                 logger.error('Authentication token not found');
-                throw new Error('Authentication required');
             }
 
             const response = await fetch(`${API_URL}/admin/restaurants`, {
@@ -207,7 +199,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to fetch all restaurants:', errorData);
-                throw new Error(errorData.message || 'Failed to fetch restaurants');
             }
 
             const restaurants = await response.json();
@@ -225,7 +216,6 @@ export const restaurantService = {
 
             if (!token) {
                 logger.error('Authentication token not found');
-                throw new Error('Authentication required');
             }
 
             const response = await fetch(`${API_URL}/admin/restaurants/${restaurantId}`, {
@@ -238,7 +228,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to fetch restaurant by ID:', errorData);
-                throw new Error(errorData.message || 'Failed to fetch restaurant');
             }
 
             const restaurant = await response.json();
@@ -256,7 +245,6 @@ export const restaurantService = {
 
             if (!token) {
                 logger.error('Authentication token not found');
-                throw new Error('Authentication required');
             }
 
             // Ensure cuisines are in English before sending to API
@@ -274,7 +262,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to create restaurant:', errorData);
-                throw new Error(errorData.message || 'Failed to create restaurant');
             }
 
             const result = await response.json();
@@ -292,7 +279,6 @@ export const restaurantService = {
 
             if (!token) {
                 logger.error('Authentication token not found');
-                throw new Error('Authentication required');
             }
 
             // Ensure cuisines are in English before sending to API
@@ -310,7 +296,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to update restaurant:', errorData);
-                throw new Error(errorData.message || 'Failed to update restaurant');
             }
 
             const result = await response.json();
@@ -328,7 +313,6 @@ export const restaurantService = {
 
             if (!token) {
                 logger.error('Authentication token not found');
-                throw new Error('Authentication required');
             }
 
             const response = await fetch(`${API_URL}/admin/restaurants/${restaurantId}`, {
@@ -341,7 +325,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to delete restaurant:', errorData);
-                throw new Error(errorData.message || 'Failed to delete restaurant');
             }
         } catch (error) {
             logger.error('Restaurant deletion error:', error);
@@ -356,7 +339,6 @@ export const restaurantService = {
 
             if (!token) {
                 logger.error('Authentication token not found');
-                throw new Error('Authentication required');
             }
 
             const formData = new FormData();
@@ -373,7 +355,6 @@ export const restaurantService = {
             if (!response.ok) {
                 const errorData = await response.json();
                 logger.error('Failed to upload image:', errorData);
-                throw new Error(errorData.message || 'Failed to upload image');
             }
 
             return response.json();
