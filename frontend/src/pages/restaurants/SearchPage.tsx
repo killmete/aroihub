@@ -111,9 +111,43 @@ const SearchPage: React.FC = () => {
     const fetchRestaurants = async () => {
       setInitialLoading(true);
       try {
-        // If we have name search param, use search API directly
-        if (nameParam) {
-          const data = await restaurantService.searchRestaurants({ name: nameParam });
+        // Check if we have any filter params that should trigger an API search
+        if (nameParam || cuisineParam || ratingParam || priceParam) {
+          // Build search params for API call
+          const searchParams: {
+            name?: string;
+            cuisine?: string;
+            minRating?: number;
+            minPrice?: number;
+            maxPrice?: number;
+          } = {};
+
+          // Add name filter if provided
+          if (nameParam) {
+            searchParams.name = nameParam;
+          }
+
+          // Add cuisine filter if provided
+          if (cuisineParam) {
+            searchParams.cuisine = getProperCaseForCuisine(cuisineParam);
+          }
+
+          // Add rating filter if provided
+          if (ratingParam) {
+            searchParams.minRating = parseFloat(ratingParam);
+          }
+
+          // Add price filter if provided
+          if (priceParam) {
+            const selectedRange = priceRanges.find(range => range.symbol === priceParam);
+            if (selectedRange) {
+              searchParams.minPrice = selectedRange.min;
+              searchParams.maxPrice = selectedRange.max;
+            }
+          }
+
+          // Make API call with the specified filters
+          const data = await restaurantService.searchRestaurants(searchParams);
           setRestaurants(data);
           setFilteredRestaurants(data);
         } else {
@@ -122,6 +156,7 @@ const SearchPage: React.FC = () => {
           setRestaurants(data);
           setFilteredRestaurants(data);
         }
+        
         setError(null);
       } catch (err) {
         logger.error("Error fetching restaurants:", err);
@@ -132,7 +167,7 @@ const SearchPage: React.FC = () => {
     };
 
     fetchRestaurants();
-  }, [nameParam]);
+  }, [nameParam, cuisineParam, ratingParam, priceParam]);
 
   // Apply filters
   useEffect(() => {
