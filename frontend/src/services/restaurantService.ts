@@ -293,13 +293,14 @@ export const restaurantService = {
                 body: JSON.stringify(processedData)
             });
 
+            const responseData = await response.json();
+            
             if (!response.ok) {
-                const errorData = await response.json();
-                logger.error('Failed to update restaurant:', errorData);
+                logger.error('Failed to update restaurant:', responseData);
+                throw new Error(responseData.message || 'Failed to update restaurant');
             }
 
-            const result = await response.json();
-            return result.restaurant;
+            return responseData.restaurant;
         } catch (error) {
             logger.error('Restaurant update error:', error);
             throw error;
