@@ -31,15 +31,17 @@ app.use((req, res, next) => {
     next();
 });
 
-// Routes
+// Public routes
+app.use('/api/maps', mapRoutes); // Map routes should be accessible without authentication
 app.use('/api/auth', authRoutes);
+
+// Other routes that may require authentication
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', restaurantRoutes);
 app.use('/api', reviewRoutes);
 app.use('/api', bannerRoutes);
 app.use('/api/logs', logRoutes);
-app.use('/api/maps', mapRoutes);
 
 // MongoDB Connection
 connectToMongo();

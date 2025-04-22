@@ -25,7 +25,29 @@ export const geocodingService = {
   async geocodeAddress(address: string): Promise<GeocodeResult> {
     try {
       // Get Google Maps API key from the backend
-      const mapConfigResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/maps/config`);
+      // Include authentication token if available
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = {};
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const mapConfigResponse = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/maps/config`, 
+        { headers }
+      );
+      
+      if (!mapConfigResponse.ok) {
+        logger.error('Failed to get map configuration:', await mapConfigResponse.text());
+        return {
+          latitude: 0,
+          longitude: 0,
+          success: false,
+          error: `Failed to get map configuration: ${mapConfigResponse.statusText}`
+        };
+      }
+      
       const mapConfig = await mapConfigResponse.json();
       
       if (!mapConfig.success || !mapConfig.apiKey) {
