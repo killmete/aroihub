@@ -39,14 +39,19 @@ AroiHub is a modern restaurant review platform designed to help users discover, 
 - **User Profiles**: Customize your profile and view your review history
 - **Responsive Design**: Fully optimized for both desktop and mobile devices
 - **Location Features**: Interactive maps showing restaurant locations for easy navigation
+- **Multilingual Support**: Support for both English and Thai languages for cuisine types
+- **Image Gallery**: Drag-and-drop image reordering functionality
 
 ### For Restaurant Owners and Admins
 - **Restaurant Management**: Add, edit, and manage restaurant listings
 - **Admin Dashboard**: Monitor platform activity and user engagement
 - **Banner Management**: Customize promotional banners for the platform
-- **Image Management**: Upload and organize restaurant images
+- **Image Management**: Upload and organize restaurant images with cropping tools
 - **Geocoding Integration**: Automatically generate coordinates from addresses for precise restaurant location mapping
 - **Location Editing**: Manually refine restaurant coordinates for perfect map placement
+- **Price Range Management**: Visual price range indicators with dynamic filtering
+- **Capacity Management**: Track and update restaurant seating capacity
+- **Log Management**: Access and monitor system logs for troubleshooting
 
 ## Tech Stack
 
@@ -55,11 +60,14 @@ AroiHub is a modern restaurant review platform designed to help users discover, 
 - **State Management**: React Context API
 - **Routing**: React Router
 - **UI Components**: Custom components with Tailwind CSS and shadcn/ui
-- **Form Handling**: React Hook Form
+- **Form Handling**: React Hook Form with validation
 - **Image Upload & Manipulation**: Drag-and-drop with cropping capabilities
 - **HTTP Client**: Fetch API
 - **Map Integration**: Google Maps API integration for location display
 - **Geocoding**: Address-to-coordinates conversion using Google Maps Geocoding API
+- **Toast Notifications**: Sonner for user feedback
+- **Internationalization**: Support for multiple languages in cuisine types
+- **Logging**: Custom client-side logger implementation
 
 ### Backend
 - **Runtime**: Node.js
@@ -70,8 +78,10 @@ AroiHub is a modern restaurant review platform designed to help users discover, 
   - MongoDB (reviews and user-generated content)
 - **File Storage**: Cloudinary (images)
 - **Validation**: Express Validator
-- **Logging**: Custom logger implementation
+- **Logging**: Custom logger implementation with rotating file storage
+- **Rate Limiting**: Protection against abuse and DDoS
 - **Location Services**: Google Maps API integration for geocoding and location data
+- **CORS**: Configured security for cross-origin requests
 
 ## Architecture
 
@@ -103,6 +113,7 @@ AroiHub follows a modern web application architecture:
 - PostgreSQL
 - MongoDB
 - Google Maps API key (for geocoding and map features)
+- Cloudinary account (for image storage)
 
 ### Installation
 
@@ -167,36 +178,42 @@ This will start both the frontend and backend servers concurrently.
 aroihub/
 ├── frontend/                # React frontend application
 │   ├── src/
-│   │   ├── assets/          # Static assets (images, SVGs)
+│   │   ├── assets/          # Static assets (images, SVGs, category images)
 │   │   ├── components/      # Reusable UI components
 │   │   │   ├── ui/          # Core UI components
 │   │   │   ├── GoogleMap.tsx # Google Maps integration component
+│   │   │   ├── DraggableImageGallery.tsx # Image reordering component
+│   │   │   ├── RectangleCropper.tsx # Image cropping component
 │   │   │   └── ...
-│   │   ├── context/         # React context providers
+│   │   ├── context/         # React context providers (Auth, Loading, Profile)
 │   │   ├── layouts/         # Layout components
 │   │   ├── pages/           # Page components
 │   │   │   ├── restaurants/ # Restaurant-related pages
 │   │   │   ├── admin/       # Admin panel pages
+│   │   │   ├── profile/     # User profile pages
 │   │   │   └── ...
 │   │   ├── services/        # API service modules
 │   │   │   ├── geocodingService.ts # Geocoding service for address-to-coordinates
 │   │   │   ├── mapService.ts       # Map-related services
+│   │   │   ├── cloudinaryService.ts # Image upload services
 │   │   │   └── ...
 │   │   ├── types/           # TypeScript type definitions
-│   │   └── utils/           # Utility functions (including logger)
+│   │   └── utils/           # Utility functions (including logger, translations)
 │   └── ...
 │
 ├── backend/                  # Express backend application
 │   ├── src/
 │   │   ├── controllers/     # Request controllers
 │   │   │   ├── mapController.ts   # Map and location controllers
+│   │   │   ├── logController.ts   # Log access controllers
 │   │   │   └── ...
-│   │   ├── db/              # Database connections
-│   │   ├── middleware/      # Express middleware
+│   │   ├── db/              # Database connections (MongoDB, PostgreSQL)
+│   │   ├── middleware/      # Express middleware (auth, admin, rate limiting)
 │   │   ├── models/          # Data models
 │   │   ├── routes/          # API routes
 │   │   ├── types/           # TypeScript type definitions
-│   │   └── utils/           # Utility functions (including logger)
+│   │   └── utils/           # Utility functions (including logger, translations)
+│   ├── logs/                # Application logs directory
 │   └── ...
 │
 └── package.json             # Root package.json for scripts
@@ -221,6 +238,7 @@ aroihub/
 | PUT | /api/users/:id | Update user | Yes |
 | DELETE | /api/users/:id | Delete user | Yes (admin) |
 | GET | /api/users | Get all users | Yes (admin) |
+| POST | /api/users/upload-avatar | Upload user avatar | Yes |
 
 ### Restaurant Endpoints
 
@@ -233,6 +251,8 @@ aroihub/
 | DELETE | /api/restaurants/:id | Delete restaurant | Yes (admin) |
 | GET | /api/restaurants/top-rated | Get top rated restaurants | No |
 | GET | /api/restaurants/newest | Get newest restaurants | No |
+| POST | /api/restaurants/upload-image | Upload restaurant image | Yes (admin) |
+| GET | /api/restaurants/search | Search restaurants with filters | No |
 
 ### Review Endpoints
 
@@ -245,6 +265,7 @@ aroihub/
 | PUT | /api/reviews/:id | Update review | Yes |
 | DELETE | /api/reviews/:id | Delete review | Yes |
 | POST | /api/reviews/:id/like | Toggle like on review | Yes |
+| POST | /api/reviews/upload-image | Upload review image | Yes |
 
 ### Banner Endpoints
 
@@ -263,33 +284,43 @@ aroihub/
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|--------------|
 | GET | /api/maps/config | Get map configuration including API keys | No |
+| POST | /api/maps/geocode | Geocode an address | Yes (admin) |
+
+### Log Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|--------------|
+| GET | /api/logs | Get application logs | Yes (admin) |
+| GET | /api/logs/error | Get error logs | Yes (admin) |
 
 ## Frontend Components
 
 ### Core Components
-- **Navbar**: Main navigation component
+- **Navbar**: Main navigation component with authentication state
 - **Footer**: Site footer with links and information
 - **LoadingBar**: Progress indicator for API operations
 - **AdminRoute**: Protected route component for admin pages
 - **ProtectedRoute**: Protected route component for authenticated users
 - **ScrollToTop**: Utility component for scrolling to top on route change
-- **DraggableImageGallery**: Component for arranging images
+- **DraggableImageGallery**: Component for arranging images with drag-and-drop
 - **ImageCropper**: Component for cropping uploaded images
-- **GoogleMap**: Map component for displaying restaurant locations
 - **RectangleCropper**: Component for cropping images to specific aspect ratios
+- **GoogleMap**: Map component for displaying restaurant locations
+- **LoadingContext**: Context for managing loading states across the application
 
 ### Page Components
 - **Home**: Landing page with featured restaurants and banners
 - **LoginPage/RegisterPage**: Authentication pages
 - **RestaurantDetails**: Restaurant information page with map integration
-- **AddReview**: Review submission form
-- **ProfilePage**: User profile management
+- **AddReview**: Review submission form with image upload
+- **ProfilePage**: User profile management with avatar upload
 - **SearchPage**: Advanced restaurant search with filtering capabilities
 - **Admin pages**: 
   - **AdminRestaurants**: Restaurant management with geocoding features
   - **AdminBanners**: Banner management interface
   - **AdminUsers**: User management dashboard
   - **AdminDashboard**: Overview of platform metrics
+  - **AdminLogs**: Log viewer for administrators
 
 ## Database Models
 
@@ -317,10 +348,10 @@ aroihub/
 - phone_number
 - latitude
 - longitude
-- cuisine_type
+- cuisine_type (array)
 - website_url
 - menu
-- images
+- images (array)
 - opening_hour
 - closing_hour
 - min_price
@@ -342,9 +373,9 @@ aroihub/
 - restaurant (FK)
 - rating
 - comment
-- images
+- images (array)
 - likes
-- likedBy
+- likedBy (array)
 - helpful_count
 - isDeleted
 - timestamps
@@ -422,6 +453,7 @@ aroihub/
 - **CORS**: Configured to allow only specified origins
 - **Helmet**: Used to set security HTTP headers
 - **API Keys**: Google Maps and third-party API keys are securely handled server-side
+- **Error Handling**: Custom error handling to prevent information leakage
 
 ## Testing
 
@@ -440,9 +472,11 @@ Currently, testing infrastructure is planned but not fully implemented. Future i
 - Icons provided by Lucide Icons
 - UI components adapted from shadcn/ui
 - Map functionality powered by Google Maps API
+- Image storage powered by Cloudinary
 
 ---
 
 <div align="center">
   <p>Made with ❤️ by AroiHub Team</p>
+  <p>Last updated: April 2025</p>
 </div>
