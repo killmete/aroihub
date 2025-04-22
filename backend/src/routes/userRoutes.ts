@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { updateProfile, uploadProfileImage, changePassword, checkUserUpdates, clearUpdates } from '../controllers/userController';
+import { updateProfile, uploadProfileImage, changePassword, checkUserUpdates, clearUpdates, uploadProfileImagePublic } from '../controllers/userController';
 import { authenticate } from '../middleware/authMiddleware';
 import { validateProfileUpdate, validatePasswordChange } from '../middleware/userMiddleware';
 import multer from 'multer';
@@ -34,13 +34,21 @@ const handleValidationErrors = (req: Request, res: Response, next: NextFunction)
 // Update user profile route
 router.put('/profile', authenticate, validateProfileUpdate, handleValidationErrors, updateProfile);
 
-// Upload profile image route
+// Upload profile image route (authenticated users)
 router.post(
     '/profile/image',
     authenticate,
     profileImageUploadLimiter,
     upload.single('image'),
     uploadProfileImage
+);
+
+// Public upload profile image route (for registration)
+router.post(
+    '/upload-profile-image',
+    profileImageUploadLimiter,
+    upload.single('image'),
+    uploadProfileImagePublic
 );
 
 // Change password route

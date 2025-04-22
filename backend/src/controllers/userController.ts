@@ -161,6 +161,43 @@ export async function uploadProfileImage(req: MulterRequest, res: Response): Pro
     }
 }
 
+// Upload profile image (public - for registration)
+export async function uploadProfileImagePublic(req: MulterRequest, res: Response): Promise<void> {
+    try {
+        if (!req.file) {
+            res.status(400).json({ message: 'No image file provided' });
+            return;
+        }
+
+        if (!req.file.mimetype.startsWith('image/')) {
+            res.status(400).json({ message: 'File must be an image' });
+            return;
+        }
+
+        try {
+            const b64 = Buffer.from(req.file.buffer).toString('base64');
+            const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+            const uploadResult = await cloudinary.uploader.upload(dataURI, {
+                folder: 'aroihub/avatars',
+                resource_type: 'image',
+                upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET || 'aroihub_avatar'
+            });
+
+            res.json({
+                message: 'Image uploaded successfully',
+                url: uploadResult.secure_url
+            });
+        } catch (cloudinaryError) {
+            logger.error('Cloudinary upload error:', cloudinaryError);
+            res.status(500).json({ message: 'Error uploading image to cloud storage' });
+        }
+    } catch (error) {
+        logger.error('Error uploading profile image:', error);
+        res.status(500).json({ message: 'Server error while uploading image' });
+    }
+}
+
 // Change password
 export async function changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
