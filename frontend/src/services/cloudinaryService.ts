@@ -14,7 +14,7 @@ export const cloudinaryService = {
         try {
             // Create FormData
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('image', file); // Changed from 'file' to 'image' to match backend expectation
             
             logger.debug('Uploading file:', {
                 name: file.name,
