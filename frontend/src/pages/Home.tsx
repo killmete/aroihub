@@ -95,6 +95,17 @@ export default function Home() {
         fetchBanners();
     }, []);
 
+    // Auto scroll banner every 5 seconds
+    useEffect(() => {
+        if (banners.length <= 1) return; // Don't auto-scroll if there's only one banner or none
+        
+        const interval = setInterval(() => {
+            handleSlideChange((activeSlide + 1) % banners.length);
+        }, 5000);
+        
+        return () => clearInterval(interval);
+    }, [activeSlide, banners.length]);
+
     // Fetch restaurants based on active tab
     useEffect(() => {
         const fetchRestaurants = async () => {
