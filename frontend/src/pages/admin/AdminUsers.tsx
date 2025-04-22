@@ -22,10 +22,21 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ArrowUpIcon, ArrowDownIcon, UserRound, ChevronLeft, ChevronRight, Edit, ArrowUpDown } from 'lucide-react';
 import logger from '../../utils/logger';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 
 // Type for sorting options
 type SortField = 'id' | 'username' | 'email' | 'first_name' | 'last_name' | 'role_id';
 type SortDirection = 'asc' | 'desc';
+
+// Form data type
+type UserFormData = {
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  role_id: number;
+};
 
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -35,12 +46,18 @@ const AdminUsers: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<User>>({});
   const [hasRoleChanged, setHasRoleChanged] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // React Hook Form setup
+  const { 
+    control, 
+    handleSubmit, 
+    reset
+  } = useForm<UserFormData>();
   
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{
@@ -195,11 +212,11 @@ const AdminUsers: React.FC = () => {
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
-    setFormData({
-      username: user.username,
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
+    reset({
+      username: user.username || '',
+      email: user.email || '',
+      first_name: user.first_name || '',
+      last_name: user.last_name || '',
       phone_number: user.phone_number || '',
       role_id: user.role_id || 0,
     });
@@ -207,22 +224,11 @@ const AdminUsers: React.FC = () => {
     setHasRoleChanged(false);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleRoleChange = (value: string) => {
-    const newRoleId = Number(value);
-    setHasRoleChanged(editingUser?.role_id !== newRoleId);
-    setFormData(prev => ({ ...prev, role_id: newRoleId }));
-  };
-
-  const handleSaveUser = async () => {
+  const handleSaveUser: SubmitHandler<UserFormData> = async (data) => {
     if (!editingUser) return;
     
     try {
-      const updatedUser = await userService.updateUser(editingUser.id, formData);
+      const updatedUser = await userService.updateUser(editingUser.id, data);
       
       // Immediately update the user in the local state
       setUsers(prevUsers => 
@@ -624,136 +630,168 @@ const AdminUsers: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="pt-6 pb-2">
-            {editingUser?.profile_picture_url && (
-              <div className="flex justify-center mb-6">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-100 shadow-md">
-                  <img 
-                    src={editingUser.profile_picture_url} 
-                    alt={`${editingUser.username} profile`} 
-                    className="w-full h-full object-cover"
+          <form onSubmit={handleSubmit(handleSaveUser)}>
+            <div className="pt-6 pb-2">
+              {editingUser?.profile_picture_url && (
+                <div className="flex justify-center mb-6">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-100 shadow-md">
+                    <img 
+                      src={editingUser.profile_picture_url} 
+                      alt={`${editingUser.username} profile`} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <div className="md:col-span-2">
+                  <Label htmlFor="username" className="font-medium text-gray-700 mb-1.5 block">
+                    Username
+                  </Label>
+                  <Controller
+                    name="username"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="username"
+                        className="w-full bg-gray-50 focus:bg-white transition-colors"
+                      />
+                    )}
                   />
                 </div>
+                
+                <div className="md:col-span-2">
+                  <Label htmlFor="email" className="font-medium text-gray-700 mb-1.5 block">
+                    Email Address
+                  </Label>
+                  <Controller
+                    name="email"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="email"
+                        type="email"
+                        className="w-full bg-gray-50 focus:bg-white transition-colors"
+                      />
+                    )}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="first_name" className="font-medium text-gray-700 mb-1.5 block">
+                    First Name
+                  </Label>
+                  <Controller
+                    name="first_name"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="first_name"
+                        className="w-full bg-gray-50 focus:bg-white transition-colors"
+                      />
+                    )}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="last_name" className="font-medium text-gray-700 mb-1.5 block">
+                    Last Name
+                  </Label>
+                  <Controller
+                    name="last_name"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="last_name"
+                        className="w-full bg-gray-50 focus:bg-white transition-colors"
+                      />
+                    )}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="phone_number" className="font-medium text-gray-700 mb-1.5 block">
+                    Phone Number
+                  </Label>
+                  <Controller
+                    name="phone_number"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="phone_number"
+                        className="w-full bg-gray-50 focus:bg-white transition-colors"
+                      />
+                    )}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="role" className="font-medium text-gray-700 mb-1.5 block">
+                    Role
+                  </Label>
+                  <Controller
+                    name="role_id"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value?.toString() || '1'}
+                        onValueChange={(value) => {
+                          field.onChange(Number(value));
+                          setHasRoleChanged(editingUser?.role_id !== Number(value));
+                        }}
+                      >
+                        <SelectTrigger className="w-full bg-gray-50 focus:bg-white transition-colors">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">User</SelectItem>
+                          <SelectItem value="2">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {hasRoleChanged && (
+                    <p className="text-amber-600 text-sm mt-1.5 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                      Role changes require user re-login
+                    </p>
+                  )}
+                </div>
               </div>
-            )}
+                
+              <div className="border-t mt-6 pt-5">
+                <p className="text-xs text-gray-500 mb-2">
+                  <span className="font-medium">Last Updated:</span> {editingUser?.updated_at ? new Date(editingUser.updated_at).toLocaleString() : 'N/A'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  <span className="font-medium">Account Created:</span> {editingUser?.created_at ? new Date(editingUser.created_at).toLocaleString() : 'N/A'}
+                </p>
+              </div>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-              <div className="md:col-span-2">
-                <Label htmlFor="username" className="font-medium text-gray-700 mb-1.5 block">
-                  Username
-                </Label>
-                <Input
-                  id="username"
-                  name="username"
-                  value={formData.username || ''}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-50 focus:bg-white transition-colors"
-                />
-              </div>
-              
-              <div className="md:col-span-2">
-                <Label htmlFor="email" className="font-medium text-gray-700 mb-1.5 block">
-                  Email Address
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email || ''}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-50 focus:bg-white transition-colors"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="first_name" className="font-medium text-gray-700 mb-1.5 block">
-                  First Name
-                </Label>
-                <Input
-                  id="first_name"
-                  name="first_name"
-                  value={formData.first_name || ''}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-50 focus:bg-white transition-colors"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="last_name" className="font-medium text-gray-700 mb-1.5 block">
-                  Last Name
-                </Label>
-                <Input
-                  id="last_name"
-                  name="last_name"
-                  value={formData.last_name || ''}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-50 focus:bg-white transition-colors"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="phone_number" className="font-medium text-gray-700 mb-1.5 block">
-                  Phone Number
-                </Label>
-                <Input
-                  id="phone_number"
-                  name="phone_number"
-                  value={formData.phone_number || ''}
-                  onChange={handleInputChange}
-                  className="w-full bg-gray-50 focus:bg-white transition-colors"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="role" className="font-medium text-gray-700 mb-1.5 block">
-                  Role
-                </Label>
-                <Select
-                  value={formData.role_id?.toString() || '1'}
-                  onValueChange={handleRoleChange}
-                >
-                  <SelectTrigger className="w-full bg-gray-50 focus:bg-white transition-colors">
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">User</SelectItem>
-                    <SelectItem value="2">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-                {hasRoleChanged && (
-                  <p className="text-amber-600 text-sm mt-1.5 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    Role changes require user re-login
-                  </p>
-                )}
-              </div>
-            </div>
-              
-            <div className="border-t mt-6 pt-5">
-              <p className="text-xs text-gray-500 mb-2">
-                <span className="font-medium">Last Updated:</span> {editingUser?.updated_at ? new Date(editingUser.updated_at).toLocaleString() : 'N/A'}
-              </p>
-              <p className="text-xs text-gray-500">
-                <span className="font-medium">Account Created:</span> {editingUser?.created_at ? new Date(editingUser.created_at).toLocaleString() : 'N/A'}
-              </p>
-            </div>
-          </div>
-          
-          <DialogFooter className="border-t pt-4 gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsEditModalOpen(false)}
-              className="border-gray-300"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveUser}
-              className="bg-blue-accent hover:bg-blue-accent-200"
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
+            <DialogFooter className="border-t pt-4 gap-2">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setIsEditModalOpen(false)}
+                className="border-gray-300"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                className="bg-blue-accent hover:bg-blue-accent-200"
+              >
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

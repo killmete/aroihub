@@ -25,10 +25,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import logger from '../../utils/logger';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 
 // Type for sorting options
 type SortField = 'restaurant_name' | 'rating' | 'createdAt' | 'likes' | 'helpful_count' | 'username';
 type SortDirection = 'asc' | 'desc';
+
+// Form data type
+type ReviewFormData = {
+  rating: number;
+  comment: string;
+  images: string[];
+};
 
 const AdminReviews: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -41,10 +49,20 @@ const AdminReviews: React.FC = () => {
   const [viewingReview, setViewingReview] = useState<Review | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<Review>>({
-    rating: 5,
-    comment: '',
-    images: [],
+  
+  // React Hook Form setup
+  const { 
+    control, 
+    handleSubmit, 
+    reset, 
+    watch, 
+    setValue
+  } = useForm<ReviewFormData>({
+    defaultValues: {
+      rating: 5,
+      comment: '',
+      images: [],
+    }
   });
   
   // Pagination and rows per page state
@@ -225,21 +243,15 @@ const AdminReviews: React.FC = () => {
 
   const handleEditReview = (review: Review) => {
     setCurrentReview(review);
-    setFormData({
+    
+    // Reset form with review data
+    reset({
       rating: review.rating,
       comment: review.comment || '',
       images: review.images || [],
     });
+    
     setIsEditDialogOpen(true);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleRatingChange = (value: string) => {
-    setFormData(prev => ({ ...prev, rating: parseInt(value) }));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,11 +274,9 @@ const AdminReviews: React.FC = () => {
         setUploadingImage(true);
         const result = await reviewService.uploadReviewImage(file);
         
-        // Add image URL to the form data
-        setFormData(prev => ({
-          ...prev,
-          images: [...(prev.images || []), result.url]
-        }));
+        // Add image URL to the form data using React Hook Form
+        const currentImages = watch('images') || [];
+        setValue('images', [...currentImages, result.url]);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to upload image');
       } finally {
@@ -282,30 +292,21 @@ const AdminReviews: React.FC = () => {
   };
 
   const handleRemoveImage = (imageUrl: string) => {
-    setFormData(prev => ({
-      ...prev,
-      images: (prev.images || []).filter(img => img !== imageUrl)
-    }));
+    const currentImages = watch('images') || [];
+    setValue('images', currentImages.filter(img => img !== imageUrl));
   };
 
-  const handleUpdateReview = async () => {
+  const handleUpdateReview: SubmitHandler<ReviewFormData> = async (data) => {
     try {
-      if (!currentReview || !formData.rating) {
-        toast.error('Rating is required');
+      if (!currentReview) {
+        toast.error('No review selected');
         return;
       }
       
       // Convert ID to string to ensure MongoDB compatibility
       const reviewId = currentReview.id!.toString();
       
-      // Prepare data for update
-      const updateData = {
-        rating: formData.rating,
-        comment: formData.comment,
-        images: formData.images
-      };
-      
-      await reviewService.updateReview(reviewId, updateData);
+      await reviewService.updateReview(reviewId, data);
       toast.success('Review updated successfully');
       
       setIsEditDialogOpen(false);
@@ -851,124 +852,137 @@ const AdminReviews: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid grid-cols-1 gap-8 py-6">
-            {/* Rating */}
-            <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
-              <Label htmlFor="rating" className="text-sm uppercase tracking-wide text-gray-500 mb-3 block">
-                Rating
-              </Label>
-              <Select
-                value={formData.rating?.toString()}
-                onValueChange={handleRatingChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select rating" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5 Stars - Excellent</SelectItem>
-                  <SelectItem value="4">4 Stars - Very Good</SelectItem>
-                  <SelectItem value="3">3 Stars - Good</SelectItem>
-                  <SelectItem value="2">2 Stars - Fair</SelectItem>
-                  <SelectItem value="1">1 Star - Poor</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center mt-3">
-                {formData.rating && renderStars(formData.rating)}
-                <span className="ml-2 text-sm text-gray-500">{formData.rating}/5</span>
-              </div>
-            </div>
-            
-            {/* Comment */}
-            <div>
-              <Label htmlFor="comment" className="text-sm uppercase tracking-wide text-gray-500 mb-2 block flex items-center">
-                <span className="w-1.5 h-5 bg-blue-accent rounded-sm mr-2"></span>
-                Comment
-              </Label>
-              <textarea
-                id="comment"
-                name="comment"
-                value={formData.comment || ''}
-                onChange={handleInputChange}
-                className="w-full min-h-[120px] p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-accent focus:border-blue-accent"
-                placeholder="Write a detailed review comment..."
-              />
-            </div>
-            
-            {/* Images */}
-            <div>
-              <Label className="text-sm uppercase tracking-wide text-gray-500 mb-2 block flex items-center">
-                <span className="w-1.5 h-5 bg-blue-accent rounded-sm mr-2"></span>
-                Review Images
-              </Label>
-              
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-4">
-                {/* Image upload box */}
-                <div 
-                  onClick={handleImageClick}
-                  className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center h-40 hover:border-blue-accent hover:bg-blue-50 transition-colors cursor-pointer"
-                >
-                  {uploadingImage ? (
-                    <div className="text-center">
-                      <div className="loading loading-spinner loading-md text-blue-accent"></div>
-                      <p className="mt-2 text-sm text-gray-500">Uploading...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <ImagePlus className="h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-500">Click to upload</p>
-                      <p className="text-xs text-gray-400 mt-1">Max 5MB</p>
-                    </>
+          <form onSubmit={handleSubmit(handleUpdateReview)}>
+            <div className="grid grid-cols-1 gap-8 py-6">
+              {/* Rating */}
+              <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                <Label htmlFor="rating" className="text-sm uppercase tracking-wide text-gray-500 mb-3 block">
+                  Rating
+                </Label>
+                <Controller
+                  name="rating"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value.toString()}
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select rating" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 Stars - Excellent</SelectItem>
+                        <SelectItem value="4">4 Stars - Very Good</SelectItem>
+                        <SelectItem value="3">3 Stars - Good</SelectItem>
+                        <SelectItem value="2">2 Stars - Fair</SelectItem>
+                        <SelectItem value="1">1 Star - Poor</SelectItem>
+                      </SelectContent>
+                    </Select>
                   )}
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                    className="hidden" 
-                  />
+                />
+                <div className="flex items-center mt-3">
+                  {renderStars(watch('rating') || 0)}
+                  <span className="ml-2 text-sm text-gray-500">{watch('rating')}/5</span>
+                </div>
+              </div>
+              
+              {/* Comment */}
+              <div>
+                <Label htmlFor="comment" className="text-sm uppercase tracking-wide text-gray-500 mb-2 block flex items-center">
+                  <span className="w-1.5 h-5 bg-blue-accent rounded-sm mr-2"></span>
+                  Comment
+                </Label>
+                <Controller
+                  name="comment"
+                  control={control}
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      id="comment"
+                      className="w-full min-h-[120px] p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-accent focus:border-blue-accent"
+                      placeholder="Write a detailed review comment..."
+                    />
+                  )}
+                />
+              </div>
+              
+              {/* Images */}
+              <div>
+                <Label className="text-sm uppercase tracking-wide text-gray-500 mb-2 block flex items-center">
+                  <span className="w-1.5 h-5 bg-blue-accent rounded-sm mr-2"></span>
+                  Review Images
+                </Label>
+                
+                <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Image upload box */}
+                  <div 
+                    onClick={handleImageClick}
+                    className="border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center h-40 hover:border-blue-accent hover:bg-blue-50 transition-colors cursor-pointer"
+                  >
+                    {uploadingImage ? (
+                      <div className="text-center">
+                        <div className="loading loading-spinner loading-md text-blue-accent"></div>
+                        <p className="mt-2 text-sm text-gray-500">Uploading...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <ImagePlus className="h-8 w-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500">Click to upload</p>
+                        <p className="text-xs text-gray-400 mt-1">Max 5MB</p>
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden" 
+                    />
+                  </div>
+                  
+                  {/* Display uploaded images */}
+                  {(watch('images') || []).map((imageUrl, index) => (
+                    <div key={index} className="relative h-40 group">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Review image ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm"
+                      />
+                      <button 
+                        type="button" 
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 w-7 h-7 flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity"
+                        onClick={() => handleRemoveImage(imageUrl)}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
                 </div>
                 
-                {/* Display uploaded images */}
-                {(formData.images || []).map((imageUrl, index) => (
-                  <div key={index} className="relative h-40 group">
-                    <img 
-                      src={imageUrl} 
-                      alt={`Review image ${index + 1}`}
-                      className="w-full h-full object-cover rounded-lg border border-gray-200 shadow-sm"
-                    />
-                    <button 
-                      type="button" 
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 w-7 h-7 flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity"
-                      onClick={() => handleRemoveImage(imageUrl)}
-                    >
-                      &times;
-                    </button>
-                  </div>
-                ))}
+                <p className="text-xs text-gray-500 mt-3">
+                  You can upload multiple images to support this review. Click on an image to add it to your review.
+                </p>
               </div>
-              
-              <p className="text-xs text-gray-500 mt-3">
-                You can upload multiple images to support this review. Click on an image to add it to your review.
-              </p>
             </div>
-          </div>
-          
-          <DialogFooter className="border-t pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsEditDialogOpen(false)}
-              className="border-gray-300"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUpdateReview}
-              className="bg-blue-accent hover:bg-blue-accent-200 px-6"
-              disabled={!formData.rating || uploadingImage}
-            >
-              {uploadingImage ? 'Uploading...' : 'Update Review'}
-            </Button>
-          </DialogFooter>
+            
+            <DialogFooter className="border-t pt-4">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setIsEditDialogOpen(false)}
+                className="border-gray-300"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                className="bg-blue-accent hover:bg-blue-accent-200 px-6"
+                disabled={uploadingImage}
+              >
+                {uploadingImage ? 'Uploading...' : 'Update Review'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
