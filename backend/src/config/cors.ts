@@ -10,10 +10,10 @@ export const corsOptions: CorsOptions = {
         callback(null, true);
       } else {
         logger.warn(`Blocked CORS request from origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Added OPTIONS for preflight
     allowedHeaders: ['Content-Type', 'Authorization', 'cache-control'],
 };
