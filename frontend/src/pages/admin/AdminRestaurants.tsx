@@ -356,11 +356,21 @@ const AdminRestaurants: React.FC = () => {
     }
 
     try {
-      const { latitude, longitude } = await geocodingService.geocodeAddress(address);
-      setValue('latitude', latitude);
-      setValue('longitude', longitude);
-      toast.success('Address geocoded successfully');
+      toast.loading('Geocoding address...');
+      
+      const result = await geocodingService.geocodeAddress(address);
+      
+      if (result.success) {
+        setValue('latitude', result.latitude);
+        setValue('longitude', result.longitude);
+        toast.dismiss();
+        toast.success('Address geocoded successfully');
+      } else {
+        toast.dismiss();
+        toast.error(result.error || 'Failed to geocode address');
+      }
     } catch (error) {
+      toast.dismiss();
       toast.error(error instanceof Error ? error.message : 'Failed to geocode address');
     }
   };

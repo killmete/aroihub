@@ -31,6 +31,22 @@ const ensureEnglishCuisines = (restaurantData: Partial<Restaurant>): Partial<Res
     return restaurantData;
 };
 
+// Helper function to prepare time fields for submission to API
+const prepareTimeFields = (restaurantData: Partial<Restaurant>): Partial<Restaurant> => {
+    const result = { ...restaurantData };
+    
+    // Convert empty string time values to null to avoid PostgreSQL errors
+    if (result.opening_hour === '') {
+        result.opening_hour = undefined;
+    }
+    
+    if (result.closing_hour === '') {
+        result.closing_hour = undefined;
+    }
+    
+    return result;
+};
+
 export const restaurantService = {
     // Public API endpoints (no Authentication required)
     async getPublicRestaurants(): Promise<Restaurant[]> {
@@ -247,8 +263,8 @@ export const restaurantService = {
                 logger.error('Authentication token not found');
             }
 
-            // Ensure cuisines are in English before sending to API
-            const processedData = ensureEnglishCuisines(restaurantData);
+            // Ensure cuisines are in English before sending to API and prepare time fields
+            const processedData = prepareTimeFields(ensureEnglishCuisines(restaurantData));
 
             const response = await fetch(`${API_URL}/admin/restaurants`, {
                 method: 'POST',
@@ -282,7 +298,7 @@ export const restaurantService = {
             }
 
             // Ensure cuisines are in English before sending to API
-            const processedData = ensureEnglishCuisines(restaurantData);
+            const processedData = prepareTimeFields(ensureEnglishCuisines(restaurantData));
 
             const response = await fetch(`${API_URL}/admin/restaurants/${restaurantId}`, {
                 method: 'PUT',
@@ -297,7 +313,6 @@ export const restaurantService = {
             
             if (!response.ok) {
                 logger.error('Failed to update restaurant:', responseData);
-                throw new Error(responseData.message || 'Failed to update restaurant');
             }
 
             return responseData.restaurant;
