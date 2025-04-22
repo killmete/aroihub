@@ -283,7 +283,7 @@ aroihub/
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|--------------|
-| GET | /api/maps/config | Get map configuration including API keys | No |
+| GET | /api/maps/config | Get map configuration including API keys | Optional |
 | POST | /api/maps/geocode | Geocode an address | Yes (admin) |
 
 ### Log Endpoints
