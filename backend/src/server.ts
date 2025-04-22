@@ -8,6 +8,7 @@ import restaurantRoutes from './routes/restaurantRoutes';
 import reviewRoutes from './routes/reviewRoutes';
 import bannerRoutes from './routes/bannerRoutes';
 import logRoutes from './routes/logRoutes';
+import mapRoutes from './routes/mapRoutes';
 import { connectToMongo } from './db/mongo';
 import logger from './utils/logger';
 import { corsOptions } from './config/cors';
@@ -38,6 +39,7 @@ app.use('/api', restaurantRoutes);
 app.use('/api', reviewRoutes);
 app.use('/api', bannerRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/maps', mapRoutes);
 
 // MongoDB Connection
 connectToMongo();
