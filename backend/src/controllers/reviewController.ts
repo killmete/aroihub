@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import Review from '../models/review';
-import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import dotenv from 'dotenv';
 import pool from "../db/index"; // PostgreSQL pool instance
@@ -327,7 +326,11 @@ export const deleteExistingReview = async (req: Request, res: Response): Promise
 };
 
 export const uploadReviewImage = async (
-  req: Request & { file?: Express.Multer.File },
+  req: Request & { file?: { 
+    buffer: Buffer;
+    mimetype: string;
+    originalname?: string;
+  } },
   res: Response
 ): Promise<void> => {
   try {

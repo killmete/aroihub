@@ -21,6 +21,7 @@ build/
 # Local env files
 *.local
 .env
+.env.production
 .env.*.local
 
 # Editor directories and files

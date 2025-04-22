@@ -6,7 +6,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
 export const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl)
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.indexOf(origin as string) !== -1) {
         callback(null, true);
       } else {
         logger.warn(`Blocked CORS request from origin: ${origin}`);

@@ -90,7 +90,7 @@ export const searchRestaurants = async (req: Request, res: Response): Promise<vo
             const cuisineLower = cuisine.toLowerCase();
             filteredRestaurants = filteredRestaurants.filter(
                 restaurant => restaurant.cuisine_type?.some(c => c.toLowerCase() === cuisineLower)
-            );
+            );  
         }
 
         // Filter by multiple cuisines (case-insensitive)
@@ -405,14 +405,20 @@ export const deleteRestaurant = async (req: Request, res: Response): Promise<voi
     }
 };
 
-export const uploadRestaurantImage = async (req: Request, res: Response): Promise<void> => {
+export const uploadRestaurantImage = async (req: Request & { 
+    file?: { 
+        buffer: Buffer; 
+        mimetype: string;
+        originalname?: string;
+    } 
+}, res: Response): Promise<void> => {
     try {
         // Handle file uploads from multer middleware
         if (req.file) {
             logger.debug('Processing image file upload for restaurant');
 
             // Convert buffer to base64
-            const base64 = Buffer.from(req.file.buffer).toString('base64');
+            const base64 = req.file.buffer.toString('base64');
             const dataURI = `data:${req.file.mimetype};base64,${base64}`;
 
             const result = await cloudinary.uploader.upload(dataURI, {
@@ -434,7 +440,7 @@ export const uploadRestaurantImage = async (req: Request, res: Response): Promis
                 res.status(400).json({ error: 'Invalid image format. Must be PNG, JPEG, JPG, or WEBP.' });
                 return;
             }
-
+            
             logger.debug('Uploading restaurant image to Cloudinary');
             
             const result = await cloudinary.uploader.upload(base64Data, {

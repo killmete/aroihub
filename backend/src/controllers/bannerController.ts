@@ -189,7 +189,7 @@ export const toggleBannerStatus = async (req: AuthenticatedRequest, res: Respons
 };
 
 // Upload banner image
-export const uploadBannerImage = async (req: Request, res: Response): Promise<void> => {
+export const uploadBannerImage = async (req: Request & { file?: { buffer: Buffer; mimetype: string } }, res: Response): Promise<void> => {
     try {
         if (!req.file) {
             res.status(400).json({ message: 'No image file provided' });
@@ -197,7 +197,7 @@ export const uploadBannerImage = async (req: Request, res: Response): Promise<vo
         }
         
         // Convert buffer to base64 for Cloudinary upload
-        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        const b64 = req.file.buffer.toString('base64');
         const dataURI = `data:${req.file.mimetype};base64,${b64}`;
         
         // Upload to Cloudinary

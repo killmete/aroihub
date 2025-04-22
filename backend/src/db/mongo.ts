@@ -2,14 +2,11 @@ import mongoose from 'mongoose';
 import logger from '../utils/logger';
 
 export const connectToMongo = async () => {
-    const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/aroihub_db';
-    const options = {
-        serverSelectionTimeoutMS: 5000
-    };
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/aroihub_db';
 
     try {
         logger.info('Connecting to MongoDB...');
-        await mongoose.connect(uri, options);
+        await mongoose.connect(uri);
         logger.info('✅ Connected to MongoDB successfully');
     } catch (error) {
         logger.error('❌ MongoDB connection failed:', error);
@@ -17,15 +14,17 @@ export const connectToMongo = async () => {
     }
 
     // Add event listeners for connection status
-    mongoose.connection.on('disconnected', () => {
+    const connection = mongoose.connection;
+    
+    connection.on('disconnected', () => {
         logger.warn('MongoDB disconnected');
     });
     
-    mongoose.connection.on('reconnected', () => {
+    connection.on('reconnected', () => {
         logger.info('MongoDB reconnected');
     });
     
-    mongoose.connection.on('error', (err) => {
+    connection.on('error', (err: Error) => {
         logger.error('MongoDB connection error:', err);
     });
 };
